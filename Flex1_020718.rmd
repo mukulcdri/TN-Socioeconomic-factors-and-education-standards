@@ -1,0 +1,102 @@
+---
+title: "Income disparity in TN counties"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library("MASS")
+library("dplyr")
+library("ggplot2")
+library("grid")
+library("stringr")
+library("reshape2")
+irs_2011_2015 <- readRDS('./r-objects/irs_2011_2015.rds')
+education_df_plus_3 <- readRDS('./r-objects/education_df_plus_3.rds')
+zip_codes_df <- readRDS('./r-objects/zip_irs_education_df.rds')
+demo_act <- readRDS('./r-objects/zip_irs_education_df.rds')[, c("Pct_Black", "Pct_Hispanic", "ACT_Composite", "county", "income_per_tax_return")]
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Income distribution
+
+```{r echo=FALSE}
+df_sort <- irs_2011_2015 %>% 
+  filter(income_per_tax_return >= 8) %>% 
+  select(county, year, income_per_tax_return)
+hist(df_sort$income_per_tax_return, breaks=10)
+```
+
+### Income across the years
+
+```{r irs_2011_2015, echo = FALSE}
+df_sort <- irs_2011_2015 %>% 
+  filter(income_per_tax_return >= 8) %>% 
+  select(
+    county, year, income_per_tax_return
+  )
+
+df_sort %>% 
+  ggplot(
+    aes(
+      x = year,
+      y = income_per_tax_return, 
+      group = county, 
+      color = county
+    )
+  ) + geom_line(size = 1.5) + 
+  labs(y = "Income Per Tax Return * 1000", x = "Years")
+```
+Row
+-----------------------------------------------------------------------
+### Counties with highest tax filers
+
+```{r echo= FALSE}
+ggplot_num_returns <- function(df, range, y.label="") {
+  df_sort_1 <- irs_2011_2015 %>% 
+    dplyr::filter(sum_total_income_returns >= range) %>% 
+    dplyr::select(
+      county, year, sum_total_income_returns
+    )
+  
+  df_sort_1 %>% 
+    ggplot(
+      aes(
+        x = year,
+        y = sum_total_income_returns, 
+        group = county,
+        color = county
+      )
+    ) + 
+    geom_line(size = 1.5) + 
+    labs(y = y.label, x = "") +
+    theme(axis.text.x = element_text(
+        face = 'bold', 
+        size = 14
+      )
+    ) +
+    theme(axis.text.y = element_text(
+        face = 'bold', 
+        size = 14
+      )
+    ) +
+    theme(axis.title.y = element_text(
+        size = 20
+      )
+    ) +
+    scale_y_continuous(labels = scales::comma) +
+    scale_color_hue(l = 60, c = 50)
+  ggplot_num_returns(irs_2011_2015, 20000, y.label = "Num of Tax Payers Per Year")
+}
+```
+### Counties with highest tax filers
+
+```{r, echo=FALSE}
+ggplot_num_returns(irs_2011_2015, 200000)
+```

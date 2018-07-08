@@ -1,0 +1,108 @@
+---
+title: "Income disparity, ranking and number of tax filers across the TN counties from 2011-2015. "
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    social: menu
+    source_code: embed
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(ggplot2)
+library(plotly)
+library(plyr)
+library(flexdashboard)
+library("grid")
+library("stringr")
+library("reshape2")
+```
+
+geom_point
+=============================================================
+Row
+-------------------------------------------------------------
+### **What is the income pattern among TN counties?**
+
+```{r echo=FALSE}
+irs_2011_2015 <- readRDS('./r-objects/irs_2011_2015.rds')
+df_sort <- irs_2011_2015 %>% 
+  filter(income_per_tax_return >= 8) %>% 
+  select(county, year, income_per_tax_return)
+ggplot(df_sort, aes(x = income_per_tax_return)) + geom_dotplot(dotsize = 1.2) + theme (axis.title=element_text(size=22,face="bold"))
+```
+
+### **Is there any change in income over the years?**
+
+```{r irs_2011_2015, echo = FALSE}
+df_sort <- irs_2011_2015 %>% 
+  filter(income_per_tax_return >= 8) %>% 
+  select(
+    county, year, income_per_tax_return
+  )
+
+ipy <- df_sort %>% 
+  ggplot(
+    aes(
+      x = year,
+      y = income_per_tax_return, 
+      group = county, 
+      color = county
+    )
+  ) + geom_line(size = .8) + 
+  labs(y = "Income Per Tax Return * 1000", x = "Years") + theme (axis.title=element_text(size=8,face="bold"))
+
+
+ggplotly(ipy)
+ 
+```
+
+Row
+--------------------------------------------------------------
+
+### **Is there any change in number of tax fiilers across the years?**
+
+```{r}
+ggplot_num_returns <- function(df, range, y.label="") {
+  df_sort_1 <- irs_2011_2015 %>% 
+    dplyr::filter(sum_total_income_returns >= range) %>% 
+    dplyr::select(
+      county, year, sum_total_income_returns
+    )
+  
+  df_sort_1 %>% 
+    ggplot(
+      aes(
+        x = year,
+        y = sum_total_income_returns, 
+        group = county,
+        color = county
+      )
+    ) + 
+    geom_line(size = .8) + 
+    labs(y = y.label, x = "") +
+    theme(axis.text.x = element_text(
+        face = 'bold', 
+        size = 8
+      )
+    ) +
+    theme(axis.text.y = element_text(
+        face = 'bold', 
+        size = 5
+      )
+    ) +
+    theme(axis.title.y = element_text(
+        size = 8
+      )
+    ) +
+    scale_y_continuous(labels = scales::comma) +
+    scale_color_hue(l = 60, c = 50)
+}
+ggplotly(ggplot_num_returns(irs_2011_2015, 20000, y.label = "Num of Tax Payers Per Year"))
+```
+
+### **Is there any change in number of tax fiilers across the years?**
+```{r, echo=FALSE}
+ggplotly (ggplot_num_returns(irs_2011_2015, 200000, y.label = "Num of Tax Payers Per Year"))
+```
+
